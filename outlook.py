@@ -49,7 +49,10 @@ def get_weekly_availability(email_address):
         return f"发生错误: {str(e)}"
 
 # 示例调用
-availability = get_weekly_availability("yibo@rbc.com")
+
+availability = get_weekly_availability("Zitengzhang@Ttt830.onmicrosoft.com")
+
+print(availability)
 
 # 打印结果示例
 for date, slots in availability.items():

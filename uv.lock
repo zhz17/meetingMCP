@@ -328,6 +328,7 @@ dependencies = [
     { name = "httpx" },
     { name = "mcp" },
     { name = "msal" },
+    { name = "pywin32" },
 ]
 
 [package.metadata]
@@ -336,6 +337,7 @@ requires-dist = [
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "mcp", specifier = ">=1.26.0" },
     { name = "msal", specifier = ">=1.34.0" },
+    { name = "pywin32", specifier = ">=311" },
 ]
 
 [[package]]
