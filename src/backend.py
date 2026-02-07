@@ -12,10 +12,11 @@ def get_next_7_working_days():
         current_date += timedelta(days=1)
     return dates
 
-def find_free_slots_next_7_working_days(my_email, participant_emails):
+def find_free_slots_next_7_working_days(my_email, participant_emails, working_hours_only=False):
     """
     查询包括我在内和所有participants包括今天在内,未来7个工作日内的所有Free time
     返回格式: { "YYYY-MM-DD": [ (start_datetime, end_datetime), ... ] }
+    working_hours_only: If True, only check times between 9:00 and 17:00
     """
     all_emails = [my_email.strip()] + [e.strip() for e in participant_emails if e.strip()]
     working_days = get_next_7_working_days()
@@ -37,6 +38,12 @@ def find_free_slots_next_7_working_days(my_email, participant_emails):
         
         if not recipients:
             return {}, "未能解析任何有效邮箱"
+
+        # Determine range based on working_hours_only
+        # 9:00 is 18 * 30min
+        # 17:00 is 34 * 30min
+        start_idx = 18 if working_hours_only else 0
+        end_idx = 34 if working_hours_only else 48
 
         # 遍历7个工作日
         for day in working_days:
@@ -62,8 +69,9 @@ def find_free_slots_next_7_working_days(my_email, participant_emails):
             
             current_start = None
             
-            # 遍历48个刻度 (00:00 - 24:00)
-            for i in range(48):
+            # 遍历刻度
+            # 注意：如果 working_hours_only=True，我们只关心 9:00-17:00
+            for i in range(start_idx, end_idx):
                 # 检查所有人在这个刻度是否都空闲
                 is_free = all(len(fb) > i and fb[i] == '0' for fb in day_fbs)
                 
@@ -80,10 +88,13 @@ def find_free_slots_next_7_working_days(my_email, participant_emails):
                         daily_slots[day_str].append((current_start, start_time)) # start_time 即为上一段的结束
                         current_start = None
             
-            # 如果最后还在空闲
+            # 如果最后还在空闲 (例如 17:00 结束时)
             if current_start:
-                final_end = day + timedelta(days=1) # 24:00
-                daily_slots[day_str].append((current_start, final_end))
+                # 如果是 working_hours_only, 结束时间强制为 last slot end (e.g. 17:00)
+                # 否则 loop 结束是 24:00 (i=47 -> end=i+1=48 -> 00:00 next day)
+                # 上面的 loop `end_time` 已经是当前 slot 的结束时间
+                # 如果 loop 正常结束，`end_time` 是最后一个 slot 的结束时间
+                daily_slots[day_str].append((current_start, end_time))
 
         return daily_slots, None
 

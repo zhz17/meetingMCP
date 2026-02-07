@@ -71,12 +71,16 @@ class MeetingSchedulerApp:
         # Participants
         ttk.Label(input_frame, text="Participates (semi-colon separated):", style="Header.TLabel").grid(row=1, column=0, sticky=tk.W, pady=5)
         self.participants_var = tk.StringVar()
-        self.participants_entry = ttk.Entry(input_frame, textvariable=self.participants_var)
         self.participants_entry.grid(row=1, column=1, sticky=tk.EW, padx=(10, 0), pady=5)
         
+        # Working Hours Checkbox
+        self.working_hours_var = tk.BooleanVar(value=False)
+        self.working_hours_chk = ttk.Checkbutton(input_frame, text="Working Hours (9:00-17:00)", variable=self.working_hours_var)
+        self.working_hours_chk.grid(row=2, column=0, columnspan=2, sticky=tk.W, pady=(5, 0))
+
         # Submit Button
         self.submit_btn = ttk.Button(input_frame, text="Search Availability", command=self.on_submit)
-        self.submit_btn.grid(row=2, column=0, columnspan=2, pady=(15, 0), sticky=tk.E)
+        self.submit_btn.grid(row=2, column=1, pady=(5, 0), sticky=tk.E)
 
     def create_results_section(self):
         self.results_frame = ttk.Frame(self.main_frame)
@@ -135,7 +139,11 @@ class MeetingSchedulerApp:
         self.root.update()
 
         # Call Backend
-        daily_slots, error = backend.find_free_slots_next_7_working_days(my_email, participants)
+        daily_slots, error = backend.find_free_slots_next_7_working_days(
+            my_email, 
+            participants, 
+            working_hours_only=self.working_hours_var.get()
+        )
         
         self.submit_btn.config(state="normal")
         
@@ -248,7 +256,7 @@ class MeetingSchedulerApp:
         
         # Subject and Body hardcoded for now or we could add inputs
         subject = "Meeting Request"
-        body = "Scheduled via Meeting Scheduler App."
+        body = "Hi, \n I am scheduling this meeting for the purpose of ... \n Thanks, "
         
         success, msg = backend.create_outlook_meeting(
             subject, 
