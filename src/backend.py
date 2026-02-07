@@ -1,10 +1,39 @@
 import win32com.client
 from datetime import datetime, timedelta
 
+try:
+    import zoneinfo
+except ImportError:
+    zoneinfo = None
+
+try:
+    from dateutil import tz as dateutil_tz
+except ImportError:
+    dateutil_tz = None
+
+def get_toronto_tz():
+    # 1. Try built-in or backport zoneinfo
+    if zoneinfo:
+        try:
+            return zoneinfo.ZoneInfo("America/Toronto")
+        except Exception:
+            pass # ZoneInfoNotFoundError or similar (no tzdata)
+
+    # 2. Try dateutil (often has internal windows mapping)
+    if dateutil_tz:
+        tz = dateutil_tz.gettz("America/Toronto")
+        if tz:
+            return tz
+
+    # 3. Fallback to fixed EST (UTC-5)
+    # Note: This doesn't handle DST automatically, but is a safe fallback for "now" in Feb.
+    return datetime.timezone(timedelta(hours=-5), name="EST")
+
 def get_next_7_working_days():
     """获取今天起未来7个工作日（含今天）的日期列表"""
     dates = []
-    current_date = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    # Make sure we use an aware datetime for local timezone
+    current_date = datetime.now(get_toronto_tz()).replace(hour=0, minute=0, second=0, microsecond=0)
     while len(dates) < 7:
         # 0=Monday, 4=Friday, 5=Saturday, 6=Sunday
         if current_date.weekday() < 5:

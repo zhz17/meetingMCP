@@ -71,6 +71,7 @@ class MeetingSchedulerApp:
         # Participants
         ttk.Label(input_frame, text="Participates (semi-colon separated):", style="Header.TLabel").grid(row=1, column=0, sticky=tk.W, pady=5)
         self.participants_var = tk.StringVar()
+        self.participants_entry = ttk.Entry(input_frame, textvariable=self.participants_var)
         self.participants_entry.grid(row=1, column=1, sticky=tk.EW, padx=(10, 0), pady=5)
         
         # Working Hours Checkbox
