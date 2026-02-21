@@ -1,0 +1,13 @@
+绘图规则:
+
+- 严格按照格式 Columns: [Id,Name,Shape Library,Page ID,Contained By,Line Source,Line Destination,Source Arrow,Destination Arrow,Text Area 1,Text Area 2,Text Area 3, ..., Text Area {n}]
+
+- Id: Unique integers (1, 2, 3...)
+- Name: Must use specific terms [Page, Swim Lane, Process, Decision, Terminator, Line]
+* Page行只有一个,请放在Id列为"1"的行,Text Area 1列为"Page 1"
+* Swim Lane行只有一个(或没有).如果有请放在Id列为"2"的行,只有此行Text Area可以有多于2列(如"Text Area 1", "Text Area 2", ..., "Text Area {n}"),在画图时Swim Lane用来表现cross多部门或多系统的流程,每一个Text Area列对应一个系统或一个部门的名称
+- Shape Library: "Flowchart Shapes" if Name in [Swim Lane, Process, Decision, Terminator], leave blank if Name in [Page, Line]
+- Page ID: 为Name in [Page]的行留空,其余行此列固定为"1",因为每个图片只包含一个page
+- Contained By: 为Name in [Page, Swin Lane, Line]留空,其余行此列根据其所对应的系统或部门,放入Swim Lanes的对应行 [Lane_ID]:[Row_Number] (e.g., 2:1). 
+- Line Source/Line Destination/Source Arrow/Destination Arrow: Apply to "Line" only, Line Source (Start ID) and Line Destination (End ID), if is an Arrow Use None for source, 'Arrow' for destination.
+- Text Area 1: While this column is required, it only needs to include data if an item in the dataset includes text. For pages, this column is used for the title of the page. For shapes and lines, this column is used to indicate text within the shape or on the line.
