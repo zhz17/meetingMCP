@@ -166,28 +166,44 @@ def calculate_layout(nodes, edges, lanes):
     layout = {}
     
     if lanes:
-        # Swimlane Layout
-        for node_id, data in nodes.items():
-            lane = data.get('lane_index')
+        # Swimlane Layout (Horizontal expansion, lanes as rows)
+        min_lane = min(lanes.keys()) if lanes else 1
+        sorted_nodes = sorted(nodes.keys(), key=lambda n: levels.get(n, 0))
+        lane_next_x = {}
+        
+        for node_id in sorted_nodes:
+            lane = nodes[node_id].get('lane_index')
             if lane is None:
-                lane = 1 # Default to first lane if undefined
+                lane_y = min_lane - 1 # Above the first lane
+            else:
+                lane_y = lane
+                
             level = levels.get(node_id, 0)
-            layout[node_id] = (lane, -level)
+            
+            # Base X is related to level to maintain topological flow
+            min_x_for_level = level * 3.5 
+            
+            # Ensure nodes in the same lane expand horizontally without overlap
+            current_lane_x = lane_next_x.get(lane_y, -3.5)
+            x = max(min_x_for_level, current_lane_x + 2.5) 
+            lane_next_x[lane_y] = x
+            
+            # Y corresponds to lane index to display lanes as rows
+            y = lane_y * 2.5
+            layout[node_id] = (x, y)
     else:
-        # Auto-Layout without lanes
-        # Group nodes by level
+        # Auto-Layout without lanes (Left-to-right flow)
         nodes_by_level = {}
         for node_id, level in levels.items():
             if level not in nodes_by_level:
                 nodes_by_level[level] = []
             nodes_by_level[level].append(node_id)
             
-        # Assign X coordinates centered around 0
         for level, level_nodes in nodes_by_level.items():
-            width = len(level_nodes)
-            start_x = -(width - 1) / 2
+            height = len(level_nodes)
+            start_y = -(height - 1) / 2.0 * 2.0
             for i, node_id in enumerate(level_nodes):
-                layout[node_id] = (start_x + i * 1.5, -level * 1.5) # Spacing: 1.5
+                layout[node_id] = (level * 3.0, start_y + i * 2.0)
                 
     return layout
 
@@ -210,22 +226,35 @@ def draw_flowchart(lanes, nodes, edges, layout, output_file='flowchart.png'):
     min_y, max_y = min(ys), max(ys)
     
     # Margin
-    ax.set_xlim(min_x - 1, max_x + 1)
-    ax.set_ylim(min_y - 1, max_y + 1)
+    margin_left = 6 if lanes else 2
+    ax.set_xlim(min_x - margin_left, max_x + 2)
+    ax.set_ylim(min_y - 2, max_y + 2)
     ax.invert_yaxis()
     ax.axis('off')
 
     # Draw Lanes (if any)
     if lanes:
         sorted_lanes = sorted(lanes.items())
+        has_no_lane_nodes = any(data.get('lane_index') is None for data in nodes.values())
+        
+        if has_no_lane_nodes and sorted_lanes:
+            first_lane_y = sorted_lanes[0][0] * 2.5
+            sep_y = first_lane_y - 1.25
+            ax.axhline(y=sep_y, color='lightgray', linestyle='--', alpha=0.5, zorder=0)
+
         for i, (idx, name) in enumerate(sorted_lanes):
-            ax.text(idx, min_y - 1.2, name, 
-                    ha='center', va='bottom', fontsize=12, fontweight='bold',
+            lane_y = idx * 2.5
+            import textwrap
+            wrapped_name = "\n".join(textwrap.wrap(name, width=15))
+            ax.text(min_x - 1.2, lane_y, wrapped_name, 
+                    ha='right', va='center', fontsize=12, fontweight='bold',
                     bbox=dict(facecolor='#f0f0f0', edgecolor='gray', boxstyle='round,pad=0.5'))
             # Draw separators half-way between indices
             if i < len(sorted_lanes) - 1:
-                sep_x = idx + 0.5
-                ax.axvline(x=sep_x, color='lightgray', linestyle='--', alpha=0.5, zorder=0)
+                next_idx = sorted_lanes[i+1][0]
+                next_lane_y = next_idx * 2.5
+                sep_y = (lane_y + next_lane_y) / 2.0
+                ax.axhline(y=sep_y, color='lightgray', linestyle='--', alpha=0.5, zorder=0)
 
     # Draw Edges
     for edge in edges:
